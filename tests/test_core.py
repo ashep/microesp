@@ -40,7 +40,16 @@ class TestCore:
                 dev.exec("Erroneous code")
 
     def test_exec_file(self):
-        pass
+        # Try to execute code on a non-connected device
+        dev = ESP8266()
+        with pytest.raises(DeviceNotConnectedError):
+            dev.exec_file('tests/mock_code.py')
+
+        with ESP8266() as dev:
+            assert dev.exec_file('tests/mock_code.py') == 'Hello world\r\n'
+
+            with pytest.raises(DeviceCodeExecutionError):
+                dev.exec_file('tests/mock_bad_code.py')
 
     def test_freq(self):
         with ESP8266() as dev:

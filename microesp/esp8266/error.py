@@ -12,5 +12,6 @@ class ESP8266Error(Exception):
 class DeviceNotConnectedError(ESP8266Error):
     pass
 
+
 class DeviceCodeExecutionError(ESP8266Error):
     pass

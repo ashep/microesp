@@ -7,8 +7,8 @@ __license__ = 'MIT'
 import binascii
 from ampy.pyboard import Pyboard, PyboardError
 from ampy.files import Files
-from.error import DeviceNotConnectedError, DeviceCodeExecutionError
-from .wlan import WLAN, IF_AP, IF_STA
+from .error import DeviceNotConnectedError, DeviceCodeExecutionError
+from .wlan import WLAN, IfType
 
 
 class ESP8266:
@@ -69,14 +69,18 @@ class ESP8266:
         self._dev.enter_raw_repl()
 
         self._files = Files(self._dev)
-        self._wlan_ap = WLAN(self, IF_AP)
-        self._wlan_sta = WLAN(self, IF_STA)
+        self._wlan_ap = WLAN(self, IfType.AP)
+        self._wlan_sta = WLAN(self, IfType.STA)
+
+        return self
 
     def close(self):
         """Close connection to the board
         """
         self._dev.exit_raw_repl()
         self._dev.close()
+
+        return self
 
     def exec(self, code: str, eval_response: bool = False, decode_output: bool = True):
         """Execute Python code on the board
@@ -94,16 +98,17 @@ class ESP8266:
         else:
             return data.decode('utf-8') if decode_output else data
 
-    def exec_file(self, f_path: str):
+    def exec_file(self, f_path: str, decode_output: bool = True):
         """Execute Python code from a file on the board
         """
         if not self._dev:
             raise DeviceNotConnectedError('Device is not connected')
 
         try:
-            return self._dev.execfile(f_path).decode('utf-8')
+            r = self._dev.execfile(f_path)
+            return r.decode('utf-8') if decode_output else r
         except PyboardError as e:
-            print(e)
+            raise DeviceCodeExecutionError(e.args[2].decode('utf-8') if decode_output else e.args[2])
 
     def reset(self):
         """Reset the board
@@ -118,4 +123,3 @@ class ESP8266:
         else:
             self.exec('import machine;machine.freq({})'.format(f))
             return self.freq()
-
