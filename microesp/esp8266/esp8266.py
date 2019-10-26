@@ -4,30 +4,14 @@ __author__ = 'Oleksandr Shepetko'
 __email__ = 'a@shepetko.com'
 __license__ = 'MIT'
 
+import binascii
 from ampy.pyboard import Pyboard, PyboardError
 from ampy.files import Files
-from .wlan import WLAN, WLAN_AP, WLAN_STA
+from.error import DeviceNotConnectedError, DeviceCodeExecutionError
+from .wlan import WLAN, IF_AP, IF_STA
 
 
 class ESP8266:
-
-    @property
-    def wlan_ap(self) -> WLAN:
-        """Get the WLAN access point interface
-        """
-        return self._wlan_ap
-
-    @property
-    def wlan_sta(self) -> WLAN:
-        """Get the WLAN station interface
-        """
-        return self._wlan_sta
-
-    @property
-    def files(self) -> Files:
-        """Files API
-        """
-        return self._files
 
     def __init__(self, port: str = '/dev/ttyUSB0', baud: int = 115200, timeout: int = 0):
         """Init
@@ -52,6 +36,32 @@ class ESP8266:
         """
         self.close()
 
+    @property
+    def unique_id(self) -> str:
+        """Get unique device ID
+        """
+        uid = self.exec('import machine;print(machine.unique_id());', decode_output=False)
+
+        return binascii.hexlify(uid).decode('utf-8')
+
+    @property
+    def wlan_ap(self) -> WLAN:
+        """Get the WLAN access point interface
+        """
+        return self._wlan_ap
+
+    @property
+    def wlan_sta(self) -> WLAN:
+        """Get the WLAN station interface
+        """
+        return self._wlan_sta
+
+    @property
+    def files(self) -> Files:
+        """Files API
+        """
+        return self._files
+
     def open(self):
         """Initialize the board
         """
@@ -59,8 +69,8 @@ class ESP8266:
         self._dev.enter_raw_repl()
 
         self._files = Files(self._dev)
-        self._wlan_ap = WLAN(self, WLAN_AP)
-        self._wlan_sta = WLAN(self, WLAN_STA)
+        self._wlan_ap = WLAN(self, IF_AP)
+        self._wlan_sta = WLAN(self, IF_STA)
 
     def close(self):
         """Close connection to the board
@@ -68,25 +78,27 @@ class ESP8266:
         self._dev.exit_raw_repl()
         self._dev.close()
 
-    def exec(self, code: str, eval_response: bool = False):
+    def exec(self, code: str, eval_response: bool = False, decode_output: bool = True):
         """Execute Python code on the board
         """
         if not self._dev:
-            raise RuntimeError('Device is not connected')
+            raise DeviceNotConnectedError('Device is not connected')
 
         data, data_err = self._dev.exec_raw(code)
 
         if data_err:
-            raise RuntimeError(data_err.decode('utf-8'))
+            raise DeviceCodeExecutionError(data_err.decode('utf-8'))
 
         if eval_response:
-            data = eval(data)
-
-        return data
+            return eval(data)
+        else:
+            return data.decode('utf-8') if decode_output else data
 
     def exec_file(self, f_path: str):
         """Execute Python code from a file on the board
         """
+        if not self._dev:
+            raise DeviceNotConnectedError('Device is not connected')
 
         try:
             return self._dev.execfile(f_path).decode('utf-8')
@@ -98,7 +110,12 @@ class ESP8266:
         """
         self.exec('import machine;machine.reset()')
 
-    def freq(self):
-        """Get current board's frequency
+    def freq(self, f: int = None) -> int:
+        """Get/set board's clock frequency
         """
-        return self.exec('import machine;print(machine.freq())', True)
+        if not f:
+            return self.exec('import machine;print(machine.freq())', True)
+        else:
+            self.exec('import machine;machine.freq({})'.format(f))
+            return self.freq()
+

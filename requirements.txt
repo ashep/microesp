@@ -1,1 +1,1 @@
-adafruit-ampy>=1.0
+adafruit-ampy==1.*

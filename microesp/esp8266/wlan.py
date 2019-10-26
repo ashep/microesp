@@ -6,9 +6,16 @@ __license__ = 'MIT'
 
 import binascii
 from typing import List, Tuple
+from enum import IntEnum
 
-WLAN_AP = 'AP_IF'
-WLAN_STA = 'STA_IF'
+IF_AP = 'AP_IF'
+IF_STA = 'STA_IF'
+
+
+class IfStatus(IntEnum):
+    """Interface status
+    """
+
 
 
 class WLAN:
@@ -18,7 +25,7 @@ class WLAN:
         """
         self._dev = esp8266
 
-        if if_type not in (WLAN_AP, WLAN_STA):
+        if if_type not in (IF_AP, IF_STA):
             raise ValueError('Invalid interface type: {}'.format(if_type))
 
         self._if_name = 'wlan_{}'.format(if_type.replace('_IF', '').lower())

@@ -1,2 +1,12 @@
-.idea
+*.egg-info
 __pycache__
+/.coverage
+/.eggs
+/.idea
+/.tox
+/board
+/build
+/check.py
+/dist
+/env
+/htmlcov
