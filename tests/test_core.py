@@ -60,4 +60,4 @@ class TestCore:
     def test_reset(self):
         with ESP8266() as dev:
             assert dev.reset() is None
-            time.sleep(2)
+            time.sleep(3)

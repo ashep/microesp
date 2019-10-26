@@ -91,7 +91,7 @@ class ESP8266:
         data, data_err = self._dev.exec_raw(code)
 
         if data_err:
-            raise DeviceCodeExecutionError(data_err.decode('utf-8'))
+            raise DeviceCodeExecutionError(data_err.decode('utf-8') if decode_output else data_err)
 
         if eval_response:
             return eval(data)
